@@ -1,0 +1,36 @@
+{
+  "name": "telogger",
+  "version": "1.0.0",
+  "description": "telegram logger",
+  "main": "dist/cjs/main.js",
+  "module": "dist/mjs/main.js",
+  "exports": {
+    ".": {
+      "import": "./dist/mjs/main.js",
+      "require": "./dist/cjs/main.js"
+    }
+  },
+  "scripts": {
+    "test": "exit 1",
+    "build": "rm -fr dist/* && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json && ./addtype"
+  },
+  "keywords": [
+    "telegram",
+    "logger",
+    "trace",
+    "debug",
+    "tracing",
+    "debugging",
+    "log",
+    "logs",
+    "error",
+    "errors",
+    "monitoring"
+  ],
+  "author": "Me",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.5",
+    "teleform": "^1.2.0"
+  }
+}
