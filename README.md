@@ -7,6 +7,10 @@ npm i telogger
 ```
 
 ## Usage
+```
+const { Telogger } = require('telogger')
+// import { Telogger } from 'telogger'
+```
 
 ### Basic Setup
 ```
