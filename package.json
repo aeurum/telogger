@@ -1,6 +1,6 @@
 {
   "name": "telogger",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "telegram logger",
   "main": "dist/cjs/main.js",
   "module": "dist/mjs/main.js",
