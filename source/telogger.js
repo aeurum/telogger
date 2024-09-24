@@ -214,6 +214,8 @@ class Telogger {
     const spot = func.match(new RegExp(regexp))
     if (!spot) return [ text, false ]
     if (spot[3] !== undefined) spot[3] = ~~spot[3]
+    if (typeof text === 'object' && spot[1] !== 'json')
+      if (text?.message) text = text.message
     switch (spot[1]) {
       default: return [ text, false ]
       case 'text': return [ html.escape(text, [ ], escape), true ]
