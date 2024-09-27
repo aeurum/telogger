@@ -156,7 +156,7 @@ class Telogger {
     const result = html.to_entities(text, true)
     if (result.text.length === 0) return
     const silent = d?.silent ?? c?.silent ?? true
-    this.#sendMessage(chat_id, result.text, result.entities, silent)
+    return this.#sendMessage(chat_id, result.text, result.entities, silent)
   }
   #mustBeSent(d, c) {
     return (
@@ -265,7 +265,9 @@ class Telogger {
       disable_notification: silent
     })
   }
-  #request(method, params) {
-    axios.post(this.#apiUrl + this.botToken + '/' + method, params).catch(error => console.error(error))
+  async #request(method, params) {
+    try {
+      return await axios.post(this.#apiUrl + this.botToken + '/' + method, params)
+    } catch(error) { return console.error(error) ?? error }
   }
 }
