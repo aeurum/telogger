@@ -1,6 +1,6 @@
 {
   "name": "telogger",
-  "version": "1.0.2",
+  "version": "1.0.9",
   "description": "Log information to Telegram.",
   "main": "dist/cjs/main.js",
   "module": "dist/mjs/main.js",
@@ -11,7 +11,7 @@
     }
   },
   "scripts": {
-    "test": "exit 1",
+    "test": "node test/telogger.test.js",
     "build": "rm -fr dist/* && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json && ./addtype"
   },
   "keywords": [
