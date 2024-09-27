@@ -198,7 +198,9 @@ class Telogger {
       if (ia instanceof Error) {
         args.push(ia.message)
         if (ia.cause)
-          args.push(ia.cause.message)
+          if (ia.cause.message)
+            args.push(ia.cause.message)
+          else args.push(ia.cause)
       } else args.push(ia)
     }
     return args
