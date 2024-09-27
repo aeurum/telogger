@@ -7,7 +7,7 @@ class Telogger {
   #apiUrl = 'https://api.telegram.org/bot'
   #spacer = '  ››  '
 
-  #replRe = /{{([a-z\(\d\+\-\) >]+)}}/gi
+  #replRe = /{{([a-z\(\d\+\-\) >]+)}(\?)?}/gi
   #funcRe = /at\s+[^\(/)]*\(?/i
 
   appTitle
@@ -61,13 +61,13 @@ class Telogger {
       to: 'err',
       icon: '🚨',
       head: '{{code > location(0)}}',
-      body: '{{text}}'
+      body: [ '{{text}?}', null, '{{blockquote}}' ]
     },
     fatal: {
       to: 'err',
       icon: '🆘',
       head: '{{code > location(0)}}',
-      body: [ '{{text}}', null, '{{pre > location(1+)}}' ]
+      body: [ '{{text}?}', null, '{{blockquote}}', null, '{{pre > location(1+)}}' ]
     }
   }
 
@@ -141,7 +141,7 @@ class Telogger {
   emerg() { return this.send('emerg', ...Object.values(arguments)) }
   emergency() { return this.send('emergency', ...Object.values(arguments)) }
 
-  send(name, ...args) {
+  send(name, ...init_args) {
     const d = this.destinations[name] ?? null
     if (!d || !d?.to) return
     const c = this.channels[d.to] ?? { }
@@ -152,6 +152,7 @@ class Telogger {
     const body = this.#template(d, c, 'body')
     if (head === false && body === false) return
     const template = this.#joinTemplate(icon, head, body)
+    const args = this.#adjustArgs(init_args)
     const text = this.#format(template, args)
     const result = html.to_entities(text, true)
     if (result.text.length === 0) return
@@ -191,9 +192,27 @@ class Telogger {
     }
     return template
   }
+  #adjustArgs(init_args) {
+    const args = [ ]
+    for (const ia of init_args) {
+      if (ia instanceof Error) {
+        args.push(ia.message)
+        if (ia.cause)
+          args.push(ia.cause.message)
+      } else args.push(ia)
+    }
+    return args
+  }
   #format(template, args) {
     let i = 0
-    return template.replace(this.#replRe, (full, expr) => {
+    const sum = {
+      args: args.length,
+      params: template.match(this.#replRe)
+              .filter(match => !match.includes('location')).length
+    }
+    const replacement = 'telegram-logger‐null'
+    return template.replace(this.#replRe, (full, expr, optional) => {
+      if (optional && sum.args < sum.params--) return replacement
       const arg = expr.includes('location') ? '' : args[i++]
       if (arg === undefined) return full
       const list = expr.split('>').map(item => item.trim())
@@ -203,7 +222,7 @@ class Telogger {
         escape = !result[1]
         return result[0]
       }, arg)
-    })
+    }).replace(new RegExp(`${replacement}(\\s|${this.#spacer})*`, 'g'), '')
   }
   #substitution(func, text, escape) {
     const regexp =  '(bold|italic|underline|' +
