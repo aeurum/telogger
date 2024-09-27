@@ -22,7 +22,19 @@ telogger.debug('third telogger message')
 telogger.info('*Telogger* supports _markdown_.')
 telogger.warn('*Four* messages sent __in a row__.')
 telogger.error('Unfortunately, errors are inevitable.')
-telogger.fatal('Something really bad happened. Goodbye!')
+telogger.fatal('Something really bad happened. Goodbye!'
+```
+You can pass `Error` to Telogger as well:
+```
+try {
+  // db.connect()
+} catch(error) {
+  // telogger.error(error)
+  // or
+  // telogger.error('Connecting to database failed.', error)
+  // or
+  telogger.error(new Error('Connecting to database failed.', { cause: error }))
+}
 ```
 
 ### Advanced Setups
@@ -141,7 +153,7 @@ Use `{{keyword}}` in your templates to format messages. Below is a list of suppo
 | location(1-2) |  | ```/src/file.js:4:4 /src/file.js:3:3``` |
 | location(3+) |  | ```/src/file.js:2:2 /src/file.js:1:1``` |
 
-You can combine several keywords in your templates, for example: `{{code > location}}`.
+You can also combine several keywords in your templates (`{{code > location}}`) and use optional blocks (`{{text}?}`).
 
 ## Contributing
 Contributions are only allowed in TON:
