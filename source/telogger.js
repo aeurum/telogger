@@ -10,6 +10,9 @@ class Telogger {
   #replRe = /{{([a-z\(\d\+\-\) >]+)}(\?)?}/gi
   #funcRe = /at\s+[^\(/)]*\(?/i
 
+  #emptyName = 'telegram-logger‐empty'
+  #newlineName = 'telegram-logger‐newline'
+
   appTitle
   botToken
 
@@ -186,7 +189,8 @@ class Telogger {
     if (body !== false) {
       if (body) {
         if (!Array.isArray(body)) body = [ body ]
-        if (head !== false) template += ln(2)
+        if (head !== false)
+          template += this.#newlineName.repeat(2)
         template += body.join(ln())
       }
     }
@@ -212,9 +216,8 @@ class Telogger {
       params: template.match(this.#replRe)
               .filter(match => !match.includes('location')).length
     }
-    const replacement = 'telegram-logger‐null'
     return template.replace(this.#replRe, (full, expr, optional) => {
-      if (optional && sum.args < sum.params--) return replacement
+      if (optional && sum.args < sum.params--) return this.#emptyName
       const arg = expr.includes('location') ? '' : args[i++]
       if (arg === undefined) return full
       const list = expr.split('>').map(item => item.trim())
@@ -224,7 +227,16 @@ class Telogger {
         escape = !result[1]
         return result[0]
       }, arg)
-    }).replace(new RegExp(`${replacement}(\\s|${this.#spacer})*`, 'g'), '')
+    }).replace(new RegExp(`${this.#emptyName}\\n*`, 'g'), '')
+      .replace(new RegExp(this.#newlineName, 'g'), '\n')
+      .split('\n')
+      .map((value, index) => {
+        if (index > 0) return value
+        const string = `${this.#spacer} *(?=${this.#spacer})`
+        return value.replace(new RegExp(string, 'g'), '')
+      })
+      .join('\n')
+      .replace(new RegExp(`[${this.#spacer} ]*$`, 'm'), '')
   }
   #substitution(func, text, escape) {
     const regexp =  '(bold|italic|underline|' +
