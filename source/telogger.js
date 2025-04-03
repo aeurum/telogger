@@ -155,7 +155,7 @@ class Telogger {
     const body = this.#template(d, c, 'body')
     if (head === false && body === false) return
     const template = this.#joinTemplate(icon, head, body)
-    const args = this.#adjustArgs(init_args)
+    const args = this.#adjustArgs(init_args, head)
     const text = this.#format(template, args)
     const result = html.to_entities(text, true)
     if (result.text.length === 0) return
@@ -196,16 +196,22 @@ class Telogger {
     }
     return template
   }
-  #adjustArgs(init_args) {
+  #adjustArgs(init_args, head) {
     const args = [ ]
-    for (const ia of init_args) {
-      if (ia instanceof Error) {
-        args.push(ia.message)
-        if (ia.cause)
-          if (ia.cause.message)
-            args.push(ia.cause.message)
-          else args.push(ia.cause)
-      } else args.push(ia)
+    for (let i = 0; i < init_args.length; i++) {
+      if (init_args[i] instanceof Error) {
+        args.push(init_args[i].message)
+        if (init_args[i].cause)
+          if (init_args[i].cause.message)
+            args.push(init_args[i].cause.message)
+          else args.push(init_args[i].cause)
+      } else {
+        if (Array.isArray(init_args[i]))
+          if (head && i === 0)
+            args.push(init_args[i].join(this.#spacer))
+          else args.push(init_args[i].join(ln()))
+        else args.push(init_args[i])
+      }
     }
     return args
   }
