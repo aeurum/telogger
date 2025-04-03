@@ -155,8 +155,8 @@ class Telogger {
     const body = this.#template(d, c, 'body')
     if (head === false && body === false) return
     const template = this.#joinTemplate(icon, head, body)
-    const args = this.#adjustArgs(init_args, head)
-    const text = this.#format(template, args)
+    const [ args, need_head ] = this.#adjustArgs(init_args, head)
+    const text = this.#format(template, args, need_head)
     const result = html.to_entities(text, true)
     if (result.text.length === 0) return
     const silent = d?.silent ?? c?.silent ?? true
@@ -198,6 +198,7 @@ class Telogger {
   }
   #adjustArgs(init_args, head) {
     const args = [ ]
+    let need_head = false
     for (let i = 0; i < init_args.length; i++) {
       if (init_args[i] instanceof Error) {
         args.push(init_args[i].message)
@@ -207,15 +208,16 @@ class Telogger {
           else args.push(init_args[i].cause)
       } else {
         if (Array.isArray(init_args[i]))
-          if (head && i === 0)
+          if (head && i === 0) {
+            need_head = true
             args.push(init_args[i].join(this.#spacer))
-          else args.push(init_args[i].join(ln()))
+          } else args.push(init_args[i].join(ln()))
         else args.push(init_args[i])
       }
     }
-    return args
+    return [ args, need_head ]
   }
-  #format(template, args) {
+  #format(template, args, need_head) {
     let i = 0
     const sum = {
       args: args.length,
@@ -223,7 +225,8 @@ class Telogger {
               .filter(match => !match.includes('location')).length
     }
     return template.replace(this.#replRe, (full, expr, optional) => {
-      if (optional && sum.args < sum.params--) return this.#emptyName
+      if (need_head) need_head = false
+      else if (optional && sum.args < sum.params--) return this.#emptyName
       const arg = expr.includes('location') ? '' : args[i++]
       if (arg === undefined) return full
       const list = expr.split('>').map(item => item.trim())
