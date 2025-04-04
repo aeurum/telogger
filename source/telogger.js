@@ -15,6 +15,7 @@ class Telogger {
 
   appTitle
   botToken
+  errorStack
 
   channels = {
     dev: {
@@ -201,6 +202,7 @@ class Telogger {
     let need_head = false
     for (let i = 0; i < init_args.length; i++) {
       if (init_args[i] instanceof Error) {
+        this.errorStack = init_args[i].stack
         args.push(init_args[i].message)
         if (init_args[i].cause)
           if (init_args[i].cause.message)
@@ -281,10 +283,11 @@ class Telogger {
     return JSON.stringify(data, null, pretty ? 2 : null)
   }
   #location(start, sign, end) {
-    let location = new Error()
-      .stack
+    const [ slice, stack ] = this.errorStack ?
+      [ 1, this.errorStack ] : [ 10, new Error().stack ]
+    const location = stack
       .split(ln())
-      .slice(10)
+      .slice(slice)
       .map(line => line.trim())
       .map(line => line.replace(/\)$/, ''))
       .filter(line => !line.includes('node:'))
