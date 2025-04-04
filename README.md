@@ -22,7 +22,7 @@ telogger.debug('third telogger message')
 telogger.info('*Telogger* supports _markdown_.')
 telogger.warn('*Four* messages sent __in a row__.')
 telogger.error('Unfortunately, errors are inevitable.')
-telogger.fatal('Something really bad happened. Goodbye!'
+telogger.fatal('Something really bad happened. Goodbye!')
 ```
 You can pass `Error` to Telogger as well:
 ```
