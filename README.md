@@ -36,6 +36,44 @@ try {
   telogger.error(new Error('Connecting to database failed.', { cause: error }))
 }
 ```
+#### Real Example
+
+##### Code
+```
+process.on('unhandledRejection', async (reason, promise) => {
+  await telogger.fatal('Unhandled rejection.', reason)
+  process.exit(1)
+})
+class UserService {
+  async getUser (user) {
+    await telogger.trace('Trying to request user info from DB.')
+    await telogger.debug(`Current user \`ID\` is \`${user.id}\`.`)
+    if (user.is_admin)
+      await telogger.info(`Admin *${user.name}* is trying to log in.`)
+    if (user.permissions === null) {
+      const logMessageHead = [ 'Type Checking' ]
+      const logMessageBody = `Permissions of user \`${user.id}\` are \`NULL\`.`
+      await telogger.warn(logMessageHead, logMessageBody) && await telogger.dump(user)
+    }
+    try {
+      const userInfo = await this.select(user.id)
+    } catch (error) { await telogger.error('Cannot select user.', error) }
+  }
+}
+```
+
+##### Result
+<p align="center">
+
+![alt telogger.trace()](https://github.com/aeurum/telogger/blob/main/images/trace-day.png?raw=true)
+![alt telogger.debug()](https://github.com/aeurum/telogger/blob/main/images/debug-day.png?raw=true)
+![alt telogger.info()](https://github.com/aeurum/telogger/blob/main/images/info-day.png?raw=true)
+![alt telogger.warn()](https://github.com/aeurum/telogger/blob/main/images/warn-day.png?raw=true)
+![alt telogger.dump()](https://github.com/aeurum/telogger/blob/main/images/dump-day.png?raw=true)
+![alt telogger.error()](https://github.com/aeurum/telogger/blob/main/images/error-day.png?raw=true)
+![alt telogger.fatal()](https://github.com/aeurum/telogger/blob/main/images/fatal-day.png?raw=true)
+
+</p>
 
 ### Advanced Setups
 You can assign different channels for different types of logs.
