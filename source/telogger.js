@@ -49,17 +49,20 @@ class Telogger {
     debug: {
       to: 'dev',
       icon: '🚧',
-      body: '{{text}}'
+      head: '{{code > function}}',
+      body: '{{rich}}'
     },
     info: {
       to: 'log',
       icon: '📮',
+      head: '{{bold}?}',
       body: '{{rich}}'
     },
     warn: {
       to: 'err',
       icon: '⚠️',
-      body: '{{rich}}'
+      head: '{{bold}?}',
+      body: [ '{{rich}}', null, '{{blockquote}?}' ]
     },
     error: {
       to: 'err',
@@ -71,7 +74,7 @@ class Telogger {
       to: 'err',
       icon: '🆘',
       head: '{{code > location(0)}}',
-      body: [ '{{text}?}', null, '{{blockquote}}', null, '{{pre > location(1+)}}' ]
+      body: [ '{{text}?}', null, '{{blockquote}}', null, '{{code > location(1+)}}' ]
     }
   }
 
@@ -157,6 +160,7 @@ class Telogger {
     if (head === false && body === false) return
     const template = this.#joinTemplate(icon, head, body)
     const [ args, need_head ] = this.#adjustArgs(init_args, head)
+    this.#createErrorStack()
     const text = this.#format(template, args, need_head)
     const result = html.to_entities(text, true)
     if (result.text.length === 0) return
@@ -203,18 +207,18 @@ class Telogger {
     for (let i = 0; i < init_args.length; i++) {
       if (init_args[i] instanceof Error) {
         this.errorStack = init_args[i].stack
-        args.push(init_args[i].message)
+        args.push([ init_args[i].message ?? '' ])
         if (init_args[i].cause)
           if (init_args[i].cause.message)
-            args.push(init_args[i].cause.message)
-          else args.push(init_args[i].cause)
+            args.push([ init_args[i].cause.message ])
+          else args.push([ init_args[i].cause.toString() ])
       } else {
         if (Array.isArray(init_args[i]))
           if (head && i === 0) {
             need_head = true
-            args.push(init_args[i].join(this.#spacer))
-          } else args.push(init_args[i].join(ln()))
-        else args.push(init_args[i])
+            args.push([ init_args[i], this.#spacer ])
+          } else args.push([ init_args[i], ln() ])
+        else args.push([ init_args[i] ])
       }
     }
     return [ args, need_head ]
@@ -224,13 +228,13 @@ class Telogger {
     const sum = {
       args: args.length,
       params: template.match(this.#replRe)
-              .filter(match => !match.includes('location')).length
+                .filter(match => !match.includes('location')).length
     }
     return template.replace(this.#replRe, (full, expr, optional) => {
       if (need_head) need_head = false
       else if (optional && sum.args < sum.params--) return this.#emptyName
-      const arg = expr.includes('location') ? '' : args[i++]
-      if (arg === undefined) return full
+      const arg = this.#needArgument(expr) ? args[i++] : '_'
+      if (arg === undefined || arg[0] === undefined) return full
       const list = expr.split('>').map(item => item.trim())
       let escape = true
       return list.reverse().reduce((acc, cur) => {
@@ -249,13 +253,20 @@ class Telogger {
       .join('\n')
       .replace(new RegExp(`[${this.#spacer} ]*$`, 'm'), '')
   }
+  #needArgument(expr) {
+    return !expr.includes('location') && !expr.includes('function')
+  }
   #substitution(func, text, escape) {
     const regexp =  '(bold|italic|underline|' +
                     'strikethrough|spoiler|' +
                     'blockquote|code|pre|' +
-                    'text|rich|json|location)' +
+                    'text|rich|json|function|location)' +
       '(\\s*\\(\\s*(\\d+)\\s*(\\+|\\-)?\\s*(\\d+)?\\s*\\))?'
     const spot = func.match(new RegExp(regexp))
+    if (Array.isArray(text))
+      if (text[1] && spot[1] !== 'json')
+        text = text[0].join(text[1])
+      else text = text[0]
     if (!spot) return [ text, false ]
     if (spot[3] !== undefined) spot[3] = ~~spot[3]
     if (typeof text === 'object' && spot[1] !== 'json')
@@ -265,6 +276,8 @@ class Telogger {
       case 'text': return [ html.escape(text, [ ], escape), true ]
       case 'rich': return [ md.to_html(text), true ]
       case 'json': return [ this.#json(text, spot[3]), false ]
+      case 'function':
+        return [ this.#function(), false ]
       case 'location':
         return [ this.#location(...spot.slice(3, 6)), false ]
       case 'bold':
@@ -282,12 +295,26 @@ class Telogger {
   #json(data, pretty = true) {
     return JSON.stringify(data, null, pretty ? 2 : null)
   }
+  #createErrorStack() {
+    const regex = new RegExp(
+      '^\\s*at\\s+process\\..+$' +
+      '\\s*at\\s+process.emit\\s+.*$' +
+      '\\s*at\\s*.*(unhandledrejection|fatalexception).*$',
+      'im'
+    )
+    let slice, stack
+    const error = new Error()
+    if (error.stack.match(regex) && this.errorStack)
+      [ slice, stack ] = [ 1, this.errorStack ]
+    else [ slice, stack ] = [ 4, error.stack ]
+    this.errorStack = stack.split(ln()).slice(slice)
+  }
+  #function() {
+    const result = this.errorStack[0].match(/^\s*at\s*((\w+)(\.\w+)?)/)
+    return result ? `${result[1]}()` : '<anonymous>'
+  }
   #location(start, sign, end) {
-    const [ slice, stack ] = this.errorStack ?
-      [ 1, this.errorStack ] : [ 10, new Error().stack ]
-    const location = stack
-      .split(ln())
-      .slice(slice)
+    const location = this.errorStack
       .map(line => line.trim())
       .map(line => line.replace(/\)$/, ''))
       .filter(line => !line.includes('node:'))
